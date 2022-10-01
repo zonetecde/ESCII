@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ESCII", "ESCII\ESCII.csproj", "{F314023E-0073-4597-B439-8F54393FB80C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EB330C0D-9C99-4591-8C58-C11EEF29D1F0}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{4F573D61-E0C3-48DE-8CD0-CD8BF4475385}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F314023E-0073-4597-B439-8F54393FB80C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F314023E-0073-4597-B439-8F54393FB80C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F314023E-0073-4597-B439-8F54393FB80C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F314023E-0073-4597-B439-8F54393FB80C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F573D61-E0C3-48DE-8CD0-CD8BF4475385}.Debug|Any CPU.ActiveCfg = Debug
+		{4F573D61-E0C3-48DE-8CD0-CD8BF4475385}.Release|Any CPU.ActiveCfg = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7E0DA691-13C3-4F67-858E-0F97094423F4}
+	EndGlobalSection
+EndGlobal
