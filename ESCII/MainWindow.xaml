@@ -16,7 +16,7 @@
 
                 <Label Content="Text to encrypt : " VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,150,0,0" FontSize="27" FontFamily="Consolas" Foreground="White"/>
                 <Border VerticalAlignment="Top" Margin="10,200,10,0"  Height="175" Background="White" CornerRadius="10,10,10,10" >
-                    <RichTextBox x:Name="richTextBox_code"  FontSize="20" FontFamily="Consolas" Background="White" Margin="10,10,10,10" BorderBrush="Transparent" SelectionBrush="White" />
+                    <RichTextBox x:Name="richTextBox_code"  FontSize="20" FontFamily="Consolas" Background="White" Margin="10,10,10,10" BorderBrush="Transparent" SelectionBrush="White" VerticalScrollBarVisibility="Auto" />
                 </Border>
                 
                 <Label Content="Image à encrypter :" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,400,0,0" FontSize="27" FontFamily="Consolas" Foreground="White"/>
@@ -73,7 +73,7 @@
                 <Label Content="Clé de déchiffrement :" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="10,0,0,155" FontSize="27" FontFamily="Consolas" Foreground="White"/>
                 <Label Content="Message caché :" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,150,0,0" FontSize="27" FontFamily="Consolas" Foreground="White"/>
                 <Border VerticalAlignment="Top" Margin="10,200,10,0"  Height="175" Background="White" CornerRadius="10,10,10,10" >
-                    <RichTextBox x:Name="richTextBox_output"  FontSize="20" FontFamily="Consolas" Background="White" Margin="10,10,10,10" BorderBrush="Transparent" SelectionBrush="White" IsReadOnly="True" />
+                    <RichTextBox x:Name="richTextBox_output"  FontSize="20" FontFamily="Consolas" Background="White" Margin="10,10,10,10" BorderBrush="Transparent" SelectionBrush="White" IsReadOnly="True" VerticalScrollBarVisibility="Auto" />
                 </Border>
                 <Label Content="Image à décrypter :" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="10,400,0,0" FontSize="27" FontFamily="Consolas" Foreground="White"/>
                 <Button x:Name="button_imageFile" VerticalAlignment="Top" HorizontalAlignment="Stretch" Margin="10,445,10,0" Height="40" Background="#00DDDDDD" Content=" Choisir une image" Cursor="Hand" Foreground="White" HorizontalContentAlignment="Left" FontSize="20" Click="Button_ChoisirImageDécrypter_Click"/>

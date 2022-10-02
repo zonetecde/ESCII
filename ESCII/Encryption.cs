@@ -43,30 +43,44 @@ namespace ESCII
 
             }
 
+            //bitmap_img bitmap_img = new bitmap_img(bitmap_img.Width, bitmap_img.Height, bitmap_img);
+
             for (int x = minX; x < bitmap_img.Width - 1; x+= pasX)
             {
-                MainWindow.bgWorker_decryptage.ReportProgress(x);
+                MainWindow.bgWorker_decryptage.ReportProgress(x, code);
 
                 for (int y = minY; y < bitmap_img.Height - 1; y+= pasY)
                 {
-                    // ré init max char
-                    if (compteur == 253)
+                    if (!MainWindow.bgWorker_decryptage.CancellationPending)
                     {
-                        compteur = 0;
-                    }
+                        // ré init max char
+                        if (compteur == 253)
+                        {
+                            compteur = 0;
+                        }
 
-                    // pixel haut bas gauche droite de la même couleur
-                    if (bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x - 1, y) &&
-                       bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x + 1, y) &&
-                       bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x, y + 1) &&
-                       bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x, y - 1) 
-                       )
+                        // pixel haut bas gauche droite de la même couleur
+                        Color centerPixel = bitmap_img.GetPixel(x, y);
+
+                        if (centerPixel == bitmap_img.GetPixel(x - 1, y) &&
+                           centerPixel == bitmap_img.GetPixel(x + 1, y) &&
+                           centerPixel == bitmap_img.GetPixel(x, y + 1) &&
+                           centerPixel == bitmap_img.GetPixel(x, y - 1)
+                           )
+                        {
+                            char lettre = (char)compteur; ;
+
+
+                            code += lettre;
+                        }
+
+                        compteur++;
+                    }
+                    else
                     {
-                        code += (char)compteur;
+                        MainWindow.didCancel = true;
+                        return String.Empty;
                     }
-
-                    compteur++;
-
                 }
             }
 
@@ -128,6 +142,8 @@ namespace ESCII
 
                 }
 
+                //bitmap_img bitmap_img = new bitmap_img(bitmap_img.Width, bitmap_img.Height, bitmap_img);
+
                 for (int x = minX; x < bitmap_img.Width - 1; x += pasX)
                 {
                     if(report)
@@ -135,38 +151,48 @@ namespace ESCII
 
                     for (int y = minY; y < bitmap_img.Height - 1; y += pasY)
                     {
-                        // Si 5 pixels sont de la même couleur exactement et que le pixel ne fait pas partie de la liste secrète
-                        if (bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x - 1, y) &&
-                            bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x + 1, y) &&
-                            bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x, y + 1) &&
-                            bitmap_img.GetPixel(x, y) == bitmap_img.GetPixel(x, y - 1)
-                            && !pixelsToReplace.Contains(compteur))
+                        if (!MainWindow.bgWorker_cryptage.CancellationPending)
                         {
-                            // on modifie alors le pixel pour que il n'y est plus que 4 pixels de la même couleur
-                            if (bitmap_img.GetPixel(x, y).R < 255)
+                            // Si 5 pixels sont de la même couleur exactement et que le pixel ne fait pas partie de la liste secrète
+                            Color centerPixel = bitmap_img.GetPixel(x, y);
+
+                            if (centerPixel == bitmap_img.GetPixel(x - 1, y) &&
+                                centerPixel == bitmap_img.GetPixel(x + 1, y) &&
+                                centerPixel == bitmap_img.GetPixel(x, y + 1) &&
+                                centerPixel == bitmap_img.GetPixel(x, y - 1)
+                                && !pixelsToReplace.Contains(compteur))
                             {
-                                bitmap_img.SetPixel(x, y, Color.FromArgb(255,
-                                    bitmap_img.GetPixel(x, y).R + 1, bitmap_img.GetPixel(x, y).G, bitmap_img.GetPixel(x, y).B));
+                                // on modifie alors le pixel pour que il n'y est plus que 4 pixels de la même couleur
+                                if (centerPixel.R < 255)
+                                {
+                                    bitmap_img.SetPixel(x, y, Color.FromArgb(255,
+                                        bitmap_img.GetPixel(x, y).R + 1, bitmap_img.GetPixel(x, y).G, bitmap_img.GetPixel(x, y).B));
+                                }
+                                else
+                                {
+                                    bitmap_img.SetPixel(x, y, Color.FromArgb(255,
+                                        bitmap_img.GetPixel(x, y).R - 1, bitmap_img.GetPixel(x, y).G, bitmap_img.GetPixel(x, y).B));
+                                }
                             }
-                            else
+                            else if (pixelsToReplace.Contains(compteur)) // si le pixel fait partie du code secret
                             {
-                                bitmap_img.SetPixel(x, y, Color.FromArgb(255,
-                                    bitmap_img.GetPixel(x, y).R - 1, bitmap_img.GetPixel(x, y).G, bitmap_img.GetPixel(x, y).B));
+                                // les pixels haut bas gauche & droite doivent être de la même couleur
+                                bitmap_img.SetPixel(x - 1, y, centerPixel);
+                                bitmap_img.SetPixel(x + 1, y, centerPixel);
+                                bitmap_img.SetPixel(x, y - 1, centerPixel);
+                                bitmap_img.SetPixel(x, y + 1, centerPixel);
                             }
+
+                            if (pixelsToReplace.Contains(compteur))
+                                letteurDone++;
+
+                            compteur++;
                         }
-                        else if (pixelsToReplace.Contains(compteur)) // si le pixel fait partie du code secret
+                        else
                         {
-                            // les pixels haut bas gauche & droite doivent être de la même couleur
-                            bitmap_img.SetPixel(x - 1, y, bitmap_img.GetPixel(x, y));
-                            bitmap_img.SetPixel(x + 1, y, bitmap_img.GetPixel(x, y));
-                            bitmap_img.SetPixel(x, y - 1, bitmap_img.GetPixel(x, y));
-                            bitmap_img.SetPixel(x, y + 1, bitmap_img.GetPixel(x, y));
+                            MainWindow.didCancel = true;
+                            return null;
                         }
-
-                        if (pixelsToReplace.Contains(compteur))
-                            letteurDone++;
-
-                        compteur++;
                     }
                 }
 
@@ -185,51 +211,6 @@ namespace ESCII
             {
                 MainWindow.output = null;
                 return null;
-            }
-        }
-
-        public class DirectBitmap : IDisposable
-        {
-            public Bitmap Bitmap { get; private set; }
-            public Int32[] Bits { get; private set; }
-            public bool Disposed { get; private set; }
-            public int Height { get; private set; }
-            public int Width { get; private set; }
-
-            protected GCHandle BitsHandle { get; private set; }
-
-            public DirectBitmap(int width, int height)
-            {
-                Width = width;
-                Height = height;
-                Bits = new Int32[width * height];
-                BitsHandle = GCHandle.Alloc(Bits, GCHandleType.Pinned);
-                Bitmap = new Bitmap(width, height, width * 4, PixelFormat.Format32bppPArgb, BitsHandle.AddrOfPinnedObject());
-            }
-
-            public void SetPixel(int x, int y, Color colour)
-            {
-                int index = x + (y * Width);
-                int col = colour.ToArgb();
-
-                Bits[index] = col;
-            }
-
-            public Color GetPixel(int x, int y)
-            {
-                int index = x + (y * Width);
-                int col = Bits[index];
-                Color result = Color.FromArgb(col);
-
-                return result;
-            }
-
-            public void Dispose()
-            {
-                if (Disposed) return;
-                Disposed = true;
-                Bitmap.Dispose();
-                BitsHandle.Free();
             }
         }
     }

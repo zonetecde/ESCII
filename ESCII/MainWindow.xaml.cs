@@ -37,6 +37,8 @@ namespace ESCII
 
         internal static Bitmap output;
 
+        internal static bool didCancel = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -44,7 +46,9 @@ namespace ESCII
             bgWorker_decryptage.WorkerReportsProgress = true;
             bgWorker_decryptage.ProgressChanged += new ProgressChangedEventHandler(bgWorker_decrypt_progressChanged);
             bgWorker_decryptage.DoWork += new DoWorkEventHandler(bgWorker_decrypt_doWork);
-           
+            bgWorker_decryptage.WorkerSupportsCancellation = true;
+
+
         }
 
         private void bgWorker_crypt_progressChanged(object? sender, ProgressChangedEventArgs e)
@@ -85,93 +89,113 @@ namespace ESCII
 
         private void Button_Encrypter_Click(object sender, RoutedEventArgs e)
         {
-            string text = new TextRange(richTextBox_code.Document.ContentStart, // texte
-                richTextBox_code.Document.ContentEnd).Text;
+            // si on n'encrypte pas déjà actuellement
+            if (!button_crypt.Content.ToString().Contains("%"))
+            {
 
-            if (text != "\r\n") // = vide
-                foreach (Border border in wrapPanel_images.Children)
-                {
-                    if (border.BorderThickness.Left == 2)
+                string text = new TextRange(richTextBox_code.Document.ContentStart, // texte
+                    richTextBox_code.Document.ContentEnd).Text;
+
+                if (text != "\r\n") // = vide
+                    foreach (Border border in wrapPanel_images.Children)
                     {
-                        var b = ConvertToBitmap(
-                                (BitmapSource)(border.Child as Image).Source);
-                    
-                        if (cb_useKey.IsChecked == true)
-                            if (txtBox_Key.Text.Length < 20)
-                            {
-                                MessageBox.Show("La clé doit faire 20 caractères.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-                                return;
-                            }
-                        bgWorker_cryptage = new BackgroundWorker();
-                        bgWorker_cryptage.WorkerReportsProgress = true;
-                        bgWorker_cryptage.ProgressChanged += new ProgressChangedEventHandler(bgWorker_crypt_progressChanged);
-                        bgWorker_cryptage.DoWork += new DoWorkEventHandler(bgWorker_crypt_doWork);
-
-                        progressBar_cryptage.Maximum = b.Width;
-                        bgWorker_cryptage.RunWorkerAsync(b);
-
-                        bgWorker_cryptage.RunWorkerCompleted += new RunWorkerCompletedEventHandler((sender, e) =>
+                        if (border.BorderThickness.Left == 2)
                         {
-                            progressBar_cryptage.Value = 0;
-                            button_crypt.Content = "Encrypter";
+                            var b = ConvertToBitmap(
+                                    (BitmapSource)(border.Child as Image).Source);
 
-                            if (output != null)
-                            {
-                                var dialog = new CommonOpenFileDialog();
-                                dialog.IsFolderPicker = true;
-                                CommonFileDialogResult result = dialog.ShowDialog();
-
-                                if (result == CommonFileDialogResult.Ok)
+                            if (cb_useKey.IsChecked == true)
+                                if (txtBox_Key.Text.Length < 20)
                                 {
-                                    output.Save(dialog.FileName + @"\output " + DateTime.Now.ToString("dd_MM_yyyy HH_mm_ss") + ".png", ImageFormat.Png);
-                                    output.Dispose();
+                                    MessageBox.Show("La clé doit faire 20 caractères.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    return;
                                 }
-                            }
-                            else
+
+                            bgWorker_cryptage = new BackgroundWorker();
+                            bgWorker_cryptage.WorkerReportsProgress = true;
+                            bgWorker_cryptage.WorkerSupportsCancellation = true;
+                            bgWorker_cryptage.ProgressChanged += new ProgressChangedEventHandler(bgWorker_crypt_progressChanged);
+                            bgWorker_cryptage.DoWork += new DoWorkEventHandler(bgWorker_crypt_doWork);
+
+                            progressBar_cryptage.Maximum = b.Width;
+                            bgWorker_cryptage.RunWorkerAsync(b);
+
+                            bgWorker_cryptage.RunWorkerCompleted += new RunWorkerCompletedEventHandler((sender, e) =>
                             {
-                                // réessaie avec une autre clé
-                                if (cb_useKey.IsChecked == true)
+                                progressBar_cryptage.Value = 0;
+                                button_crypt.Content = "Encrypter";
+
+                                if (output != null) 
                                 {
-                                    for (int i = 0; i < 20; i++)
+                                    
+                                    var dialog = new CommonOpenFileDialog();
+                                    dialog.IsFolderPicker = true;
+                                    CommonFileDialogResult result = dialog.ShowDialog();
+
+                                    if (result == CommonFileDialogResult.Ok)
                                     {
-                                        string newK = GénérerClé();
-                                        Bitmap btm = Encryption.Encrypt(b,
-                                            text, newK, false);
-
-                                        if (btm != null)
+                                        output.Save(dialog.FileName + @"\output " + DateTime.Now.ToString("dd_MM_yyyy HH_mm_ss") + ".png", ImageFormat.Png);
+                                        output.Dispose();
+                                    }
+                                    
+                                }
+                                else if (didCancel)
+                                {
+                                    // annuler
+                                    didCancel = false;
+                                    MessageBox.Show("Chiffrement annulé.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                                }
+                                else // output == null
+                                {
+                                    // réessaie avec une autre clé
+                                    if (cb_useKey.IsChecked == true)
+                                    {
+                                        for (int i = 0; i < 20; i++)
                                         {
-                                            if (MessageBox.Show("La clé actuelle ne permet pas d'encoder cette image.\nVoulez-vous utiliser la clé \"" + newK + "\" ? \nElle sera enregistrer dans le presse papier.", "Information", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
+                                            string newK = GénérerClé();
+                                            Bitmap btm = Encryption.Encrypt(b,
+                                                text, newK, false);
+
+                                            if (btm != null)
                                             {
-                                                Clipboard.SetText(newK);
-
-                                                var dialog = new CommonOpenFileDialog();
-                                                dialog.IsFolderPicker = true;
-                                                CommonFileDialogResult result = dialog.ShowDialog();
-
-                                                if (result == CommonFileDialogResult.Ok)
+                                                if (MessageBox.Show("La clé actuelle ne permet pas d'encoder cette image.\nVoulez-vous utiliser la clé \"" + newK + "\" ? \nElle sera enregistrer dans le presse papier.", "Information", MessageBoxButton.YesNo, MessageBoxImage.Information) == MessageBoxResult.Yes)
                                                 {
-                                                    btm.Save(dialog.FileName + @"\output " + DateTime.Now.ToString("dd_MM_yyyy HH_mm_ss") + ".png", ImageFormat.Png);
-                                                    btm.Dispose();
+                                                    Clipboard.SetText(newK);
+
+                                                    var dialog = new CommonOpenFileDialog();
+                                                    dialog.IsFolderPicker = true;
+                                                    CommonFileDialogResult result = dialog.ShowDialog();
+
+                                                    if (result == CommonFileDialogResult.Ok)
+                                                    {
+                                                        btm.Save(dialog.FileName + @"\output " + DateTime.Now.ToString("dd_MM_yyyy HH_mm_ss") + ".png", ImageFormat.Png);
+                                                        btm.Dispose();
+                                                    }
                                                 }
+
+                                                return;
                                             }
 
-                                            return;
                                         }
-
                                     }
+                                    MessageBox.Show("L'image est trop petite pour contenir votre message secret. Veuillez en choisir une autre.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
                                 }
-                                MessageBox.Show("L'image est trop petite pour contenir votre message secret. Veuillez en choisir une autre.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-                            }
-                        });
+                            });
 
 
-                       
-                    
+
+
+                        }
                     }
-                }
+                else
+                    MessageBox.Show("Veuillez écrire la chose à encrypter dans l'image.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
             else
-                MessageBox.Show("Veuillez écrire la chose à encrypter dans l'image.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-            //MessageBox.Show(Encryption.Decryption(new Bitmap("output474.png")));
+            {
+                // cancel l’encryption en cours
+                bgWorker_cryptage.CancelAsync();
+                button_crypt.Content = "Encrypter";
+            }
 
         }
 
@@ -302,25 +326,46 @@ namespace ESCII
         {
             richTextBox_output.Document.Blocks.Clear();
 
-            if(!button_decrypter.Content.ToString().Contains("%"))
-            if(!button_imageFile.Content.ToString().Contains("Choisir une image") )
-            {
-                if (txtBox_decryptKey.Text.Length == 0 || txtBox_decryptKey.Text.Length == 20)
+            if (!button_decrypter.Content.ToString().Contains("%"))
+                if (!button_imageFile.Content.ToString().Contains("Choisir une image"))
                 {
-                    bgWorker_decryptage.RunWorkerAsync(new Bitmap(button_imageFile.Content.ToString()));
-
-                    bgWorker_decryptage.RunWorkerCompleted += new RunWorkerCompletedEventHandler((sender, e) =>
+                    if (txtBox_decryptKey.Text.Length == 0 || txtBox_decryptKey.Text.Length == 20)
                     {
-                        progressBar_decryptage.Value = 0;
-                        button_decrypter.Content = "Décrypter";
-                        richTextBox_output.AppendText(SecretMessage);
-                    });
+                        bgWorker_decryptage.RunWorkerAsync(new Bitmap(button_imageFile.Content.ToString()));
+
+                        bgWorker_decryptage.RunWorkerCompleted += new RunWorkerCompletedEventHandler((sender, e) =>
+                        {
+                            if (didCancel && !badKey)
+                            {
+
+                                didCancel = false;
+                                MessageBox.Show("Déchiffrement annulé.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                            }
+                            else if(!badKey && !didCancel)
+                            {
+                                richTextBox_output.Document.Blocks.Clear();
+                                richTextBox_output.AppendText(SecretMessage);
+                            }
+                            else
+                            {
+                                badKey = false;
+                                MessageBox.Show("Mauvaise clé", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+                            }
+                            button_decrypter.Content = "Décrypter";
+                            progressBar_decryptage.Value = 0;
+                        });
+                    }
+                    else
+                        MessageBox.Show("Clé invalide.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
                 else
-                    MessageBox.Show("Clé invalide.", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+                    MessageBox.Show("Veuillez choisir une image", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
             else
-                MessageBox.Show("Veuillez choisir une image", "Erreur", MessageBoxButton.OK, MessageBoxImage.Error);
+            {
+                // cancel la decryption en cours
+                bgWorker_decryptage.CancelAsync();
+                button_decrypter.Content = "Décrypter";
+            }
         }
 
         /// <summary>
@@ -341,6 +386,8 @@ namespace ESCII
             
         }
 
+        private bool badKey = false;
+
         /// <summary>
         /// Décryptage progressChanged
         /// </summary>
@@ -352,6 +399,18 @@ namespace ESCII
             Dispatcher.Invoke(() =>
             {
                 progressBar_decryptage.Value = e.ProgressPercentage;
+
+                // met le code petit à petit
+                richTextBox_output.Document.Blocks.Clear();
+                string code = e.UserState.ToString();
+
+                if(code.Contains("!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]")) // = mauvaise clé
+                {
+                    // cancel la decryption en cours
+                    badKey = true;
+                    bgWorker_decryptage.CancelAsync();
+                    
+                }
 
                 double p = Math.Round(((e.ProgressPercentage / progressBar_decryptage.Maximum) * 100), 2);
                 button_decrypter.Content = p.ToString().PadLeft(3) + "%";
